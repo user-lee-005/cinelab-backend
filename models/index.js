@@ -10,10 +10,7 @@ const mongoURI = `mongodb+srv://${dbConfig.username}:${dbConfig.password}@${dbCo
 
 // Connect to MongoDB
 mongoose
-  .connect(mongoURI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(mongoURI)
   .then(() => console.log("MongoDB connected successfully"))
   .catch((err) => console.error("MongoDB connection error:", err));
 

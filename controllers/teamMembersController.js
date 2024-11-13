@@ -55,6 +55,7 @@ exports.getAllTeamMembers = async (req, res) => {
 
 exports.saveTeamMember = async (req, res) => {
   const form = new formidable.IncomingForm();
+  form.maxFileSize = 10 * 1024 * 1024;
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
@@ -87,6 +88,7 @@ exports.saveTeamMember = async (req, res) => {
 exports.updateTeamMember = async (req, res) => {
   const { id } = req.params;
   const form = new formidable.IncomingForm();
+  form.maxFileSize = 10 * 1024 * 1024;
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
