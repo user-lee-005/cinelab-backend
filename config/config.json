@@ -1,0 +1,22 @@
+{
+  "development": {
+    "database": "cinelab",
+    "username": "infocinelab05",
+    "password": "m4cFjudtDnUMB0xr",
+    "host": "cinelab.ywobv.mongodb.net"
+  },
+  "test": {
+    "username": "root",
+    "password": "password",
+    "database": "cinelab_test",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "root",
+    "password": "password",
+    "database": "cinelab_production",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  }
+}
