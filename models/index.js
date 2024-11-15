@@ -6,7 +6,7 @@ const dbConfig = config[env];
 const db = {};
 
 // MongoDB Atlas URI
-const mongoURI = `mongodb+srv://${dbConfig.username}:${dbConfig.password}@${dbConfig.host}/${dbConfig.database}?retryWrites=true&w=majority`;
+const mongoURI = `mongodb+srv://${dbConfig.username}:${dbConfig.password}@${dbConfig.host}/?retryWrites=true&w=majority&appName=${dbConfig.database}`;
 
 // Connect to MongoDB
 mongoose
