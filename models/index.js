@@ -6,13 +6,19 @@ const dbConfig = config[env];
 const db = {};
 
 // MongoDB Atlas URI
-const mongoURI = `mongodb+srv://${dbConfig.username}:${dbConfig.password}@${dbConfig.host}/?retryWrites=true&w=majority&appName=${dbConfig.database}`;
+const mongoURI = `mongodb+srv://${dbConfig.username}:${dbConfig.password}@${dbConfig.host}/?retryWrites=true&w=majority`;
+// const mongoURI = `mongodb+srv://${dbConfig.username}:${dbConfig.password}@${dbConfig.host}/?retryWrites=true&w=majority&appName=${dbConfig.database}`;
 
 // Connect to MongoDB
 mongoose
-  .connect(mongoURI)
+  .connect(mongoURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => console.log("MongoDB connected successfully"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+  });
 
 // Import Models
 db.TeamMember = require("./TeamMember");
