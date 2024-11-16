@@ -13,6 +13,36 @@ const formidable = require("formidable");
 const fs = require("fs");
 const nodemailer = require("nodemailer");
 
+const createEmailBody = (client) => {
+  if (client.isBrochureDownloadDetails) {
+    return {
+      subject: "New Client Details Submitted for Downloading Brochure",
+      text: `Client Details:
+        Name: ${client.name}
+        Email: ${client.email}
+        Mobile: ${client.mobile},
+        Profession: ${client.profession}`,
+      html: `<p><b>Client Details:</b></p>
+        <p><b>Name:</b> ${client.name}</p>
+        <p><b>Email:</b> ${client.email}</p>
+        <p><b>Mobile:</b> ${client.mobile}</p>
+        <p><b>Profession:</b> ${client.profession}</p>`,
+    };
+  } else {
+    return {
+      subject: "New Client Details Submitted for Contacting Us",
+      text: `Client Details:
+        Name: ${client.name}
+        Email: ${client.email}
+        Message: ${client.message}`,
+      html: `<p><b>Client Details:</b></p>
+        <p><b>Name:</b> ${client.name}</p>
+        <p><b>Email:</b> ${client.email}</p>
+        <p><b>Message:</b> ${client.message}</p>`,
+    };
+  }
+};
+
 const sendEmail = async (client) => {
   try {
     let transporter = nodemailer.createTransport({
@@ -23,18 +53,10 @@ const sendEmail = async (client) => {
       },
     });
 
-    let mailOptions = {
+    const mailOptions = {
       from: `"Website-${client.id}" cinelabmail@gmail.com`,
       to: "info.cinelab05@gmail.com",
-      subject: "New Client Details Submitted",
-      text: `Client Details:
-      Name: ${client.name}
-      Email: ${client.email}
-      Message: ${client.message}`,
-      html: `<p><b>Client Details:</b></p>
-      <p><b>Name:</b> ${client.name}</p>
-      <p><b>Email:</b> ${client.email}</p>
-      <p><b>Message:</b> ${client.message}</p>`,
+      ...createEmailBody(client),
     };
 
     let info = await transporter.sendMail(mailOptions);
@@ -155,20 +177,37 @@ exports.deleteTeamMember = async (req, res) => {
 
 exports.saveClientDetails = async (req, res) => {
   try {
-    const { name, email, message } = req.body;
+    const {
+      name,
+      email,
+      message,
+      mobile,
+      profession,
+      isBrochureDownloadDetails,
+    } = req.body;
 
-    if (!name || !email) {
-      return res.status(400).json({ error: "Name and email are required." });
+    // Validation
+    if (
+      !name ||
+      !email ||
+      (isBrochureDownloadDetails && (!mobile || !profession))
+    ) {
+      return res.status(400).json({
+        error:
+          "Name, email, mobile, and profession are required for brochure download details.",
+      });
     }
 
     const client = {
       name,
       email,
       message,
+      mobile,
+      profession,
+      isBrochureDownloadDetails,
     };
 
-    const clientsRef = collection(db, "clients");
-    const docRef = await addDoc(clientsRef, client);
+    const docRef = await saveClientToFirestore(client);
 
     await sendEmail({ id: docRef.id, ...client });
 
@@ -182,4 +221,10 @@ exports.saveClientDetails = async (req, res) => {
       .status(500)
       .json({ error: "An error occurred while saving client details." });
   }
+};
+
+const saveClientToFirestore = async (client) => {
+  const clientsRef = collection(db, "clients");
+  const docRef = await addDoc(clientsRef, client);
+  return docRef;
 };
