@@ -4,7 +4,7 @@ const corsConfig = require("./config/corsConfig");
 const compression = require("compression");
 
 const app = express();
-const port = process.env.X_ZOHO_CATALYST_LISTEN_PORT || 3001;
+const port = 3001;
 
 // Enable CORS
 app.use(corsConfig); // You can use your existing corsConfig or configure here
