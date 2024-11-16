@@ -1,4 +1,14 @@
-const { TeamMember, ClientInfo } = require("../models");
+const { db, collection } = require("../firebase");
+const {
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+} = require("firebase/firestore");
 const formidable = require("formidable");
 const fs = require("fs");
 const nodemailer = require("nodemailer");
@@ -11,11 +21,10 @@ const sendEmail = async (client) => {
         user: "cinelabmail@gmail.com",
         pass: "hzgqpwcixywurike",
       },
-      debug: true,
     });
 
     let mailOptions = {
-      from: `"Website-${client._id}" cinelabmail@gmail.com`,
+      from: `"Website-${client.id}" cinelabmail@gmail.com`,
       to: "info.cinelab05@gmail.com",
       subject: "New Client Details Submitted",
       text: `Client Details:
@@ -39,15 +48,14 @@ const sendEmail = async (client) => {
 
 exports.getAllTeamMembers = async (req, res) => {
   try {
-    const teamMembers = await TeamMember.find();
-    const membersWithImages = teamMembers.map((member) => {
-      const base64Image = member.image.toString("base64");
-      return {
-        ...member.toObject(),
-        image: `data:image/jpg;base64,${base64Image}`,
-      };
-    });
-    res.json(membersWithImages);
+    const teamMembersRef = collection(db, "teamMembers");
+    const teamMembersSnapshot = await getDocs(teamMembersRef);
+    const teamMembers = teamMembersSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    res.json(teamMembers);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -66,19 +74,22 @@ exports.saveTeamMember = async (req, res) => {
     const file = files.file[0];
 
     try {
-      const image = fs.readFileSync(file.filepath);
+      const image = fs.readFileSync(file.filepath).toString("base64");
 
-      const teamMember = new TeamMember({
+      const newMember = {
         name: name[0],
         role: role[0],
         image,
+      };
+
+      const teamMembersRef = collection(db, "teamMembers");
+      const docRef = await addDoc(teamMembersRef, newMember);
+
+      res.status(200).json({
+        message: "Team member added successfully",
+        id: docRef.id,
+        teamMember: newMember,
       });
-
-      await teamMember.save();
-
-      res
-        .status(200)
-        .json({ message: "Team member added successfully", teamMember });
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
@@ -99,26 +110,29 @@ exports.updateTeamMember = async (req, res) => {
     const file = files.file && files.file[0];
 
     try {
-      const teamMember = await TeamMember.findById(id);
+      const teamMemberRef = doc(db, "teamMembers", id);
+      const teamMemberSnapshot = await getDoc(teamMemberRef);
 
-      if (!teamMember) {
+      if (!teamMemberSnapshot.exists()) {
         return res.status(404).json({ message: "Team member not found" });
       }
 
-      let updatedImage = teamMember.image;
+      let updatedImage = teamMemberSnapshot.data().image;
       if (file) {
-        updatedImage = fs.readFileSync(file.filepath);
+        updatedImage = fs.readFileSync(file.filepath).toString("base64");
       }
 
-      teamMember.name = name ? name[0] : teamMember.name;
-      teamMember.role = role ? role[0] : teamMember.role;
-      teamMember.image = updatedImage;
+      const updatedMember = {
+        name: name ? name[0] : teamMemberSnapshot.data().name,
+        role: role ? role[0] : teamMemberSnapshot.data().role,
+        image: updatedImage,
+      };
 
-      await teamMember.save();
+      await updateDoc(teamMemberRef, updatedMember);
 
       res.status(200).json({
         message: "Team member updated successfully",
-        teamMember,
+        teamMember: updatedMember,
       });
     } catch (error) {
       res.status(500).json({ message: error.message });
@@ -130,13 +144,8 @@ exports.deleteTeamMember = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const teamMember = await TeamMember.findById(id);
-
-    if (!teamMember) {
-      return res.status(404).json({ message: "Team member not found" });
-    }
-
-    await teamMember.remove();
+    const teamMemberRef = doc(db, "teamMembers", id);
+    await deleteDoc(teamMemberRef);
 
     res.status(200).json({ message: "Team member deleted successfully" });
   } catch (error) {
@@ -152,18 +161,20 @@ exports.saveClientDetails = async (req, res) => {
       return res.status(400).json({ error: "Name and email are required." });
     }
 
-    const client = new ClientInfo({
+    const client = {
       name,
       email,
       message,
-    });
+    };
 
-    await client.save();
-    await sendEmail(client);
+    const clientsRef = collection(db, "clients");
+    const docRef = await addDoc(clientsRef, client);
+
+    await sendEmail({ id: docRef.id, ...client });
 
     res.status(201).json({
       message: "Client details saved successfully",
-      client,
+      client: { id: docRef.id, ...client },
     });
   } catch (error) {
     console.error("Error saving client details:", error);
