@@ -1,4 +1,4 @@
-const { db, collection } = require("../firebase");
+const { db, collection } = require("../models/firebase");
 const {
   doc,
   setDoc,
